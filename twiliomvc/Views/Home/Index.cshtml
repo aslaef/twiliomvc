@@ -1,0 +1,117 @@
+﻿
+
+<div id="remote-media"></div>
+<div id="controls">
+    <div class="row">
+        <div class="col col-lg-6" id="preview">
+            <h1 id="button-preview">My Camera</h1>
+            <p><br /></p>
+            <div class="videobox" id="local-media"></div>
+
+        </div>
+        <div class="col col-lg-6" id="preview2">
+            <h1 id="button-preview">Partners</h1>
+            
+
+        </div>
+    </div>
+    <div id="room-controls">
+
+        <p class="instructions">Room Name:</p>
+        <input id="room-name" type="text" placeholder="Enter a room name" />
+
+        <button id="button-join">Join Room</button>
+        <button id="button-leave">Leave Room</button>
+
+    </div>
+    <div id="remote-media"></div>
+    <div id="log"></div>
+</div>
+<script src="//media.twiliocdn.com/sdk/js/video/v1/twilio-video.min.js"></script>
+<script>
+    var activeRoom
+
+    document.getElementById('button-join').onclick = function () {
+
+        roomName = document.getElementById('room-name').value;
+        if (!roomName) { roomName = "deffault_room"; }
+
+  
+        
+        console.log("@Model.Token");
+        Twilio.Video.connect("@Model.Token", { name: roomName }).then(room => {
+            console.log('Connected to Room "%s"', room.name);
+
+            room.participants.forEach(participantConnected);
+            room.on('participantConnected', participantConnected);
+
+            room.on('participantDisconnected', participantDisconnected);
+            room.once('disconnected', error => room.participants.forEach(participantDisconnected));
+            
+            room.localParticipant.tracks.forEach(track => {
+            document.getElementById('local-media').appendChild(track.attach());
+            
+        });
+            activeRoom = room;
+        });
+        
+    };
+    document.getElementById('button-leave').onclick = function () {
+        
+        activeRoom.disconnect();
+        var myNode = document.getElementById("local-media");
+        while (myNode.firstChild) {
+            myNode.removeChild(myNode.firstChild);
+        }
+    };
+
+
+    function participantConnected(participant) {
+        
+    console.log('Participant "%s" connected', participant.identity);
+
+    var myNode = document.getElementById("preview2");
+    var div = document.createElement('div');
+    var text = document.createElement('p');
+    text.id = participant.identity;
+    var containerdiv = document.createElement('div');
+    text.innerText = participant.identity;
+    
+    
+    
+  div.id = participant.sid;
+    div.className += ' videobox';
+  
+    
+  participant.on('trackAdded', track => trackAdded(div, track));
+  participant.tracks.forEach(track => trackAdded(div, track));
+    participant.on('trackRemoved', trackRemoved);
+
+    containerdiv.appendChild(text);
+    containerdiv.appendChild(div);
+    myNode.appendChild(containerdiv);
+}
+
+function participantDisconnected(participant) {
+  console.log('Participant "%s" disconnected', participant.identity);
+
+  participant.tracks.forEach(trackRemoved);
+    
+    document.getElementById(participant.sid).parentNode.remove();
+}
+
+function trackAdded(div, track) {
+  div.appendChild(track.attach());
+}
+
+function trackRemoved(track) {
+  track.detach().forEach(element => element.remove());
+}
+
+
+
+
+
+</script>
+
+
